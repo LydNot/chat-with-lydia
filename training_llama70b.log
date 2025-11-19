@@ -1,0 +1,109 @@
+Retrying due to status code 500. text={"error":"Internal Server Error","message":"An unexpected error occurred. Log ID: deab0f61-0c1d-4cf1-800e-cc10466d8dab"}
+================================================================================
+TINKER TRAINING - LYDIA'S BLOG
+================================================================================
+
+1. Connecting to Tinker...
+
+Available models:
+  - deepseek-ai/DeepSeek-V3.1
+  - deepseek-ai/DeepSeek-V3.1-Base
+  - meta-llama/Llama-3.1-70B
+  - meta-llama/Llama-3.1-8B
+  - meta-llama/Llama-3.1-8B-Instruct
+  - meta-llama/Llama-3.2-1B
+  - meta-llama/Llama-3.2-3B
+  - meta-llama/Llama-3.3-70B-Instruct
+  - Qwen/Qwen3-235B-A22B-Instruct-2507
+  - Qwen/Qwen3-30B-A3B
+  - Qwen/Qwen3-30B-A3B-Base
+  - Qwen/Qwen3-30B-A3B-Instruct-2507
+  - Qwen/Qwen3-32B
+  - Qwen/Qwen3-4B-Instruct-2507
+  - Qwen/Qwen3-8B
+  - Qwen/Qwen3-8B-Base
+  - openai/gpt-oss-120b
+  - openai/gpt-oss-20b
+
+2. Creating training client with model: meta-llama/Llama-3.1-70B
+   ✓ Tokenizer loaded
+
+3. Loading training data from: /Users/mox/lydia-clone/blogposts_unified_instruction.jsonl
+   ✓ Loaded 114 examples
+
+4. Processing examples into Tinker format...
+
+   Sample (first example):
+   Prompt: Write a blog post titled 'Inkhaven Bucket List':...
+   Completion: Today I woke up & looked around me & realized I was at this ...
+   Input tokens: 845
+   ⚠️  Warning: Failed to process example 1: object of type 'TensorData' has no len()
+   ✓ Successfully processed 114 examples
+
+5. Training Statistics:
+   Examples: 114
+   Total tokens: 90,592
+   Avg tokens/example: 795
+   Epochs: 3
+   Total training tokens: 271,776
+   Estimated cost: $0.13
+
+6. Starting training (BASE_MODEL: meta-llama/Llama-3.1-70B, EPOCHS: 3)...
+   This may take 10-30 minutes depending on queue...
+
+   Epoch 1/3
+      Batch 5, Loss: 3.1793
+      Batch 10, Loss: 2.7159
+      Batch 15, Loss: 2.7483
+      Batch 20, Loss: 2.6750
+      Batch 25, Loss: 2.4556
+   Epoch 1 complete. Avg loss: 2.6507
+
+   Epoch 2/3
+      Batch 5, Loss: 2.2383
+      Batch 10, Loss: 1.7505
+      Batch 15, Loss: 1.2818
+      Batch 20, Loss: 1.4697
+      Batch 25, Loss: 1.0295
+   Epoch 2 complete. Avg loss: 1.4848
+
+   Epoch 3/3
+      Batch 5, Loss: 0.5381
+      Batch 10, Loss: 0.2947
+      Batch 15, Loss: 0.1316
+      Batch 20, Loss: 0.1331
+      Batch 25, Loss: 0.0914
+   Epoch 3 complete. Avg loss: 0.2336
+
+
+7. Training complete! 🎉
+
+8. Saving model as 'lydia-blog-llama70b-v1'...
+   ✓ Model saved!
+
+9. Testing the finetuned model...
+
+   Prompt: Write a blog post about AI safety:
+   Response:  Today I woke up with an irresistible urge to write about AI safety. I’m not sure why, given that I haven’t done much original thinking about the topi...
+
+   Prompt: What are your thoughts on revealed preferences?
+   Response:  It seems like such a simple and clean concept at first, but the more I’ve thought about it, the less clear it seems.
+
+...
+
+   Prompt: Tell me about mutual information:
+   Response:  Part I
+
+...
+
+================================================================================
+✅ TRAINING COMPLETE!
+================================================================================
+
+Model 'lydia-blog-llama70b-v1' is ready to use!
+Total cost: $0.13
+
+Next steps:
+  1. Test more prompts with your finetuned model
+  2. Download weights: tinker download lydia-blog-llama70b-v1
+  3. Publish weights (optional): tinker publish lydia-blog-llama70b-v1
