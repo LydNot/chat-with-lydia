@@ -22,6 +22,15 @@ blogposts_unified_instruction.jsonl
 substack-feed.rss
 training_llama70b.log
 
+# Training scripts with personal paths (keep local only)
+tinker_train_llama70b.py
+sample_correctly.py
+parse_rss_to_plaintext.py
+create_all_formats.py
+create_unified_format.py
+clean_bad_examples.py
+validate_unified.py
+
 # Temporary files
 *.log
 *.tmp
