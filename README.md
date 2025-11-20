@@ -104,27 +104,35 @@ Then add to the dropdown:
 
 ## 🚀 Deployment
 
+### Deploy to Render.com (Recommended)
+
+**Get your app online in 5 minutes!**
+
+1. Go to [render.com](https://render.com) and sign up
+2. Click "New +" → "Web Service"
+3. Connect your GitHub repo: `chat-with-lydia`
+4. Configure:
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `gunicorn app:app --bind 0.0.0.0:$PORT`
+   - **Environment Variable**: `TINKER_API_KEY` = your-key
+5. Click "Create Web Service"
+6. Wait 2-5 minutes - done! 🎉
+
+**Full guide**: See [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md) for detailed step-by-step instructions.
+
 ### Local Development
 ```bash
 python3 app.py
 ```
 
-### Production with Gunicorn
-```bash
-pip install gunicorn
-gunicorn -w 4 -b 0.0.0.0:5001 app:app
-```
+### Other Deployment Options
 
-### Docker
-```dockerfile
-FROM python:3.10
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-EXPOSE 5001
-CMD ["python", "app.py"]
-```
+See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for:
+- Railway
+- Heroku
+- Google Cloud Run
+- AWS Elastic Beanstalk
+- DigitalOcean
 
 ### Environment Variables
 
@@ -133,7 +141,7 @@ Required:
 
 Optional:
 - `FLASK_ENV` - Set to `production` for deployment
-- `FLASK_DEBUG` - Set to `0` for production
+- `PYTHON_VERSION` - Set to `3.10.0` for consistency
 
 ## 🛠️ Development
 
