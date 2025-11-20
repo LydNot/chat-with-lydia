@@ -17,6 +17,16 @@ ENV/
 *api_key*
 *API_KEY*
 
+# Training data and outputs (sensitive)
+blogposts_unified_instruction.jsonl
+substack-feed.rss
+training_llama70b.log
+
+# Temporary files
+*.log
+*.tmp
+/tmp/
+
 # OS
 .DS_Store
 .DS_Store?
@@ -32,9 +42,3 @@ Thumbs.db
 *.swp
 *.swo
 *~
-
-# Logs
-# Keep training_llama70b.log but ignore other logs
-!training_llama70b.log
-debug*.log
-

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tinker Chat - Fine-tuned Model Interface</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🤖 Tinker Chat</h1>
+            <p class="subtitle">Chat with your fine-tuned model</p>
+            <div class="status" id="status">
+                <span class="status-indicator" id="status-indicator"></span>
+                <span id="status-text">Not initialized</span>
+            </div>
+        </header>
+
+        <!-- Settings Panel -->
+        <div class="settings-panel" id="settings-panel">
+            <div class="settings-content">
+                <h3>⚙️ Model Configuration</h3>
+                
+                <div class="form-group">
+                    <label for="model-preset">Select Model</label>
+                    <select id="model-preset">
+                        <option value="" selected>-- Choose a model or enter custom below --</option>
+                        <option value="custom">Custom Checkpoint ID</option>
+                    </select>
+                    <small>Add your models by editing templates/index.html</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="checkpoint-id">Checkpoint ID</label>
+                    <input 
+                        type="text" 
+                        id="checkpoint-id" 
+                        placeholder="416b24fb-ccc8-5e68-94c8-c080f92b4dc4:train:0"
+                        value=""
+                    >
+                    <small>Enter your Tinker checkpoint ID (with or without tinker:// prefix)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="base-model">Base Model</label>
+                    <select id="base-model">
+                        <option value="meta-llama/Llama-3.1-70B" selected>Llama 3.1 70B</option>
+                        <option value="meta-llama/Llama-3.1-8B">Llama 3.1 8B</option>
+                        <option value="meta-llama/Llama-3.1-405B">Llama 3.1 405B</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="temperature">Temperature: <span id="temp-value">0.7</span></label>
+                        <input 
+                            type="range" 
+                            id="temperature" 
+                            min="0" 
+                            max="1" 
+                            step="0.1" 
+                            value="0.7"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="max-tokens">Max Tokens: <span id="tokens-value">1500</span></label>
+                        <input 
+                            type="range" 
+                            id="max-tokens" 
+                            min="200" 
+                            max="4000" 
+                            step="100" 
+                            value="1500"
+                        >
+                        <small>Higher values = longer responses (1500 ≈ 1000 words)</small>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="auto-stop" checked>
+                        <span>Auto-stop at natural ending (prevents rambling)</span>
+                    </label>
+                    <small>Uncheck for maximum length responses without early stopping</small>
+                </div>
+
+                <div class="info-box">
+                    <strong>⏱️ Loading Time:</strong> First load typically takes 15-30 seconds. Subsequent messages are much faster!<br>
+                    <strong>📝 Response Length:</strong> Set max tokens to 1500-2000 for full blog posts, 4000 for very long content.
+                </div>
+
+                <button class="btn btn-primary" id="initialize-btn">
+                    Load Model
+                </button>
+            </div>
+        </div>
+
+        <!-- Toggle Settings Button -->
+        <button class="btn-toggle-settings" id="toggle-settings-btn">
+            ⚙️ Settings
+        </button>
+
+        <!-- Chat Container -->
+        <div class="chat-container" id="chat-container">
+            <div class="welcome-message" id="welcome-message">
+                <h2>👋 Welcome!</h2>
+                <p>Enter your Tinker checkpoint ID in settings and click "Load Model" to start chatting.</p>
+                <p class="hint">💡 Get your checkpoint ID from the Tinker Console after training your model.</p>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+            <textarea 
+                id="user-input" 
+                placeholder="Type your message here..." 
+                rows="3"
+                disabled
+            ></textarea>
+            <button class="btn btn-send" id="send-btn" disabled>
+                <span>Send</span>
+                <span class="icon">→</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Elements
+        const statusIndicator = document.getElementById('status-indicator');
+        const statusText = document.getElementById('status-text');
+        const settingsPanel = document.getElementById('settings-panel');
+        const toggleSettingsBtn = document.getElementById('toggle-settings-btn');
+        const initializeBtn = document.getElementById('initialize-btn');
+        const modelPresetSelect = document.getElementById('model-preset');
+        const checkpointInput = document.getElementById('checkpoint-id');
+        const baseModelSelect = document.getElementById('base-model');
+        const temperatureSlider = document.getElementById('temperature');
+        const maxTokensSlider = document.getElementById('max-tokens');
+        const autoStopCheckbox = document.getElementById('auto-stop');
+        const tempValue = document.getElementById('temp-value');
+        const tokensValue = document.getElementById('tokens-value');
+        const chatContainer = document.getElementById('chat-container');
+        const welcomeMessage = document.getElementById('welcome-message');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        let isInitialized = false;
+
+        // Model presets configuration
+        // Add your own fine-tuned models here!
+        const modelPresets = {
+            // Example preset - uncomment and customize:
+            // 'my_model': {
+            //     name: "My Fine-tuned Model",
+            //     checkpoint: 'your-checkpoint-id:train:0',
+            //     baseModel: 'meta-llama/Llama-3.1-70B',
+            //     description: 'Description of your model'
+            // }
+        };
+
+        // Handle model preset selection
+        modelPresetSelect.addEventListener('change', (e) => {
+            const presetId = e.target.value;
+            
+            if (presetId && presetId !== 'custom' && modelPresets[presetId]) {
+                const preset = modelPresets[presetId];
+                checkpointInput.value = preset.checkpoint;
+                baseModelSelect.value = preset.baseModel;
+                checkpointInput.readOnly = true;
+                checkpointInput.style.background = '#f3f4f6';
+            } else {
+                checkpointInput.readOnly = false;
+                checkpointInput.style.background = 'white';
+                if (presetId === 'custom') {
+                    checkpointInput.value = '';
+                    checkpointInput.focus();
+                }
+            }
+        });
+
+        // Update slider values
+        temperatureSlider.addEventListener('input', (e) => {
+            tempValue.textContent = e.target.value;
+        });
+
+        maxTokensSlider.addEventListener('input', (e) => {
+            tokensValue.textContent = e.target.value;
+        });
+
+        // Toggle settings panel
+        toggleSettingsBtn.addEventListener('click', () => {
+            settingsPanel.classList.toggle('open');
+            toggleSettingsBtn.textContent = settingsPanel.classList.contains('open') 
+                ? '✕ Close Settings' 
+                : '⚙️ Settings';
+        });
+
+        // Update status
+        function updateStatus(initialized, checkpoint = null) {
+            isInitialized = initialized;
+            if (initialized) {
+                statusIndicator.className = 'status-indicator active';
+                const presetId = modelPresetSelect.value;
+                const modelName = (presetId && modelPresets[presetId]) ? modelPresets[presetId].name : 'Model';
+                statusText.textContent = `Ready: ${modelName}`;
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+                if (welcomeMessage) {
+                    welcomeMessage.style.display = 'none';
+                }
+            } else {
+                statusIndicator.className = 'status-indicator';
+                statusText.textContent = 'Not initialized';
+                userInput.disabled = true;
+                sendBtn.disabled = true;
+            }
+        }
+
+        // Initialize model
+        initializeBtn.addEventListener('click', async () => {
+            const checkpointId = checkpointInput.value.trim();
+            const baseModel = baseModelSelect.value;
+            const presetId = modelPresetSelect.value;
+
+            if (!checkpointId) {
+                alert('Please enter a checkpoint ID');
+                return;
+            }
+
+            initializeBtn.disabled = true;
+            initializeBtn.textContent = 'Loading... (15-30 seconds)';
+
+            // Show loading message
+            const modelName = (presetId && modelPresets[presetId]) ? modelPresets[presetId].name : 'Model';
+            addMessage('system', `🔄 Loading ${modelName}... This typically takes 15-30 seconds.`);
+
+            try {
+                const response = await fetch('/api/initialize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ checkpoint_id: checkpointId, base_model: baseModel })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    updateStatus(true, data.checkpoint);
+                    addMessage('system', `✅ ${modelName} loaded successfully! You can now start chatting.`);
+                    settingsPanel.classList.remove('open');
+                    toggleSettingsBtn.textContent = '⚙️ Settings';
+                } else {
+                    addMessage('system', `❌ Error loading model: ${data.error}`);
+                }
+            } catch (error) {
+                addMessage('system', `❌ Error: ${error.message}`);
+            } finally {
+                initializeBtn.disabled = false;
+                initializeBtn.textContent = 'Load Model';
+            }
+        });
+
+        // Add message to chat
+        function addMessage(role, content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'avatar';
+            avatar.textContent = role === 'user' ? '👤' : '🤖';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = content;
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(contentDiv);
+            chatContainer.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Send message
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message || !isInitialized) return;
+
+            // Add user message
+            addMessage('user', message);
+            userInput.value = '';
+            userInput.style.height = 'auto';
+
+            // Disable input while processing
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<span>Thinking...</span><span class="icon loading">⟳</span>';
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        temperature: parseFloat(temperatureSlider.value),
+                        max_tokens: parseInt(maxTokensSlider.value),
+                        use_stop_sequence: autoStopCheckbox.checked
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    addMessage('assistant', data.response);
+                } else {
+                    addMessage('system', `❌ Error: ${data.error}`);
+                }
+            } catch (error) {
+                addMessage('system', `❌ Error: ${error.message}`);
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '<span>Send</span><span class="icon">→</span>';
+            }
+        }
+
+        // Send on button click
+        sendBtn.addEventListener('click', sendMessage);
+
+        // Send on Enter (Shift+Enter for new line)
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Auto-resize textarea
+        userInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+        });
+
+        // Check initial status
+        async function checkStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                if (data.initialized) {
+                    // Try to match checkpoint to a preset
+                    for (const [presetId, preset] of Object.entries(modelPresets)) {
+                        if (data.checkpoint && data.checkpoint.includes(preset.checkpoint)) {
+                            modelPresetSelect.value = presetId;
+                            break;
+                        }
+                    }
+                    updateStatus(true, data.checkpoint);
+                    const modelName = (modelPresetSelect.value && modelPresets[modelPresetSelect.value]) 
+                        ? modelPresets[modelPresetSelect.value].name : 'Model';
+                    addMessage('system', `✅ ${modelName} already loaded and ready!`);
+                }
+            } catch (error) {
+                console.error('Status check failed:', error);
+            }
+        }
+
+        // Check status on load
+        checkStatus();
+    </script>
+</body>
+</html>
+
